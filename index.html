@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>LOVE GP 2026</title>
+
+<style>
+#loader{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg,#000,#1a0033);
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  z-index:9999;
+  font-family:sans-serif;
+}
+
+.loader-content{
+  animation:pulse 1.2s infinite;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+  100%{transform:scale(1);}
+}
+
+
+
+body{
+  margin:0;
+  overflow:hidden;
+  background:#141414;
+  font-family:Arial, Helvetica, sans-serif;
+  color:white;
+  touch-action:none;   
+
+#lockScreen{
+  position:fixed;
+  inset:0;
+  background:#000;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:9998;
+  font-family:sans-serif;
+}
+
+.lock-box{
+  text-align:center;
+}
+
+.lock-box input{
+  padding:10px;
+  margin-top:10px;
+}
+
+.lock-box button{
+  padding:10px 20px;
+  margin-top:10px;
+  cursor:pointer;
+}
+#error{
+  color:red;
+}
+
+}
+
+#ui{
+  position:absolute;
+  top:15px;
+  left:15px;
+  font-size:18px;
+}
+
+#bars{
+  margin-top:8px;
+  height:10px;
+  width:120px;
+  background:#333;
+}
+#fill{
+  height:100%;
+  width:10%;
+  background:lime;
+}
+
+#popup{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#000000e0;
+  padding:25px 40px;
+  border-radius:10px;
+  text-align:center;
+  display:none;
+}
+
+button{
+  padding:10px 18px;
+  font-size:16px;
+  margin:10px;
+  cursor:pointer;
+}
+
+img.cat{
+  width:120px;
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  animation: dance 1s infinite alternate;
+}
+
+@keyframes dance{
+  0%{ transform:translateX(-50%) rotate(-10deg);}
+  50%{ transform:translateX(-50%) rotate(10deg);}
+  100%{ transform:translateX(-50%) rotate(-10deg);}
+}
+#mobileControls{
+  position:fixed;
+  bottom:15px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:12px;
+  z-index:500;
+}
+
+#mobileControls button{
+  width:65px;
+  height:65px;
+  font-size:22px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.15);
+  color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="loader">
+  <div class="loader-content">
+    <h1>🏁 Starting engines of LOVE GP...</h1>
+    <p>Preparing something special ❤️</p>
+  </div>
+</div>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <h2>🔒 Private Race</h2>
+    <p>Enter the password to start ❤️</p>
+    <input type="password" id="passInput" placeholder="Password">
+    <button onclick="checkPassword()">Start</button>
+    <p id="error"></p>
+  </div>
+</div>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+Speed: <span id="speed">0</span><br>
+Lap: <span id="lap">0</span>
+<div id="bars"><div id="fill"></div></div>
+</div>
+
+<div id="popup"></div>
+<div id="mobileControls">
+  <button id="left">◀</button>
+  <button id="gas">▲</button>
+  <button id="right">▶</button>
+  <button id="brake">▼</button>
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const celebrationMusic = new Audio("music/love.mp3");
+celebrationMusic.loop = true; // repeat forever
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let centerX, centerY;
+
+let outerA, outerB, innerA, innerB;
+
+
+let keys = {};
+let lap = 0;
+let passedCheckpoint = false;
+let gameFinished = false;
+let popupActive = false;
+let starParticles = [];
+
+let car = {
+  x: centerX,
+  y: centerY - (innerB+outerB)/2,
+  angle: Math.PI/2,
+  speed: 0
+};
+
+// ================= RESPONSIVE RESIZE =================
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  centerX = canvas.width / 2;
+  centerY = canvas.height / 2;
+
+  // responsive track size
+  outerA = canvas.width * 0.40;
+  outerB = canvas.height * 0.35;
+
+  innerA = outerA * 0.62;
+  innerB = outerB * 0.50;
+
+  // reset car to start position
+  car.x = centerX;
+  car.y = centerY - (innerB + outerB) / 2;
+}
+
+window.addEventListener("load",()=>{
+  document.getElementById("loader").style.display="none";
+});
+
+const correctPassword = "1410"; // change to anything
+
+function checkPassword(){
+  const val = document.getElementById("passInput").value;
+
+  if(val === correctPassword){
+    document.getElementById("lockScreen").style.display = "none";
+  }else{
+    document.getElementById("error").innerText = "Wrong password ❤️";
+  }
+}
+
+
+window.addEventListener("resize", resize);
+resize();
+
+
+document.addEventListener("keydown", e => keys[e.key]=true);
+document.addEventListener("keyup", e => keys[e.key]=false);
+
+// ================= MOBILE TOUCH =================
+function bindButton(id, key){
+  const btn = document.getElementById(id);
+
+  btn.addEventListener("touchstart", e=>{
+    e.preventDefault();
+    keys[key] = true;
+  });
+
+  btn.addEventListener("touchend", e=>{
+    e.preventDefault();
+    keys[key] = false;
+  });
+
+  // mouse for desktop testing
+  btn.addEventListener("mousedown", ()=> keys[key]=true);
+  btn.addEventListener("mouseup", ()=> keys[key]=false);
+}
+
+bindButton("left","ArrowLeft");
+bindButton("right","ArrowRight");
+bindButton("gas","ArrowUp");
+bindButton("brake","ArrowDown");
+
+
+
+// ================= ENGINE SOUND =================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+osc.type = "sawtooth";
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+gain.gain.value = 0;
+osc.start();
+window.addEventListener("click", ()=> audioCtx.resume());
+
+
+// ================= STORY TEXT + PHOTOS ===================
+const stories = [
+  {text:"Lap 1 ❤️ Just look at that smiles...", photo:"photos/lap1.jpg"},
+  {text:"Lap 2 💫 Imagicaa..ee..yaa.ee..yaa", photo:"photos/lap2.jpg"},
+  {text:"Lap 3 🌹 Aankhon me teri ajab si ajab si aadayein haii..", photo:"photos/lap3.jpg"},
+  {text:"Lap 4 ✨ Garba Ramvanuu..", photo:"photos/lap4.jpg"},
+  {text:"Lap 5 💖 My most fav place is to be in your arms..", photo:"photos/lap5.jpg"},
+  {text:"Lap 6 🔥 US in a few years during Sankranti", photo:"photos/lap6.jpg"},
+  {text:"Lap 7 🏆 One last thing...", photo:"photos/lap7.jpg"}
+];
+
+
+// ================= TRACK ========================
+function drawTrack(){
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
+  ctx.fillStyle = "#2f2f2f";
+  ctx.beginPath();
+  ctx.ellipse(0,0,outerA,outerB,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = "#1f5f1f";
+  ctx.beginPath();
+  ctx.ellipse(0,0,innerA,innerB,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "white";
+  ctx.beginPath();
+  ctx.ellipse(0,0,outerA,outerB,0,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.ellipse(0,0,innerA,innerB,0,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+
+// =============== FINISH / CHECK =================
+const finishAngle = -Math.PI/2;
+const checkpointAngle = Math.PI/2;
+
+function drawFinishLine(angle){
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+
+  const stripeCount = 10;
+  const width = 14;
+  const len = outerB-innerB;
+
+  for(let i=0;i<stripeCount;i++){
+    ctx.fillStyle = i%2 ? "white":"black";
+    ctx.fillRect(-width/2, innerB + i*(len/stripeCount), width, len/stripeCount);
+  }
+
+  ctx.restore();
+}
+
+
+// ================= CAR ==========================
+function drawCar(){
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle);
+
+  ctx.fillStyle = "#ff4444";
+  ctx.fillRect(-12,-7,24,14);
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(0,-5,10,10);
+
+  ctx.restore();
+}
+
+
+// ============== TRACK LIMIT =====================
+function checkTrackLimits(){
+  let dx = car.x - centerX;
+  let dy = car.y - centerY;
+
+  let outer = (dx*dx)/(outerA*outerA) + (dy*dy)/(outerB*outerB);
+  let inner = (dx*dx)/(innerA*innerA) + (dy*dy)/(innerB*innerB);
+
+  if(outer>1 || inner<1){
+    car.speed *= 0.95;
+  }
+
+  car.x = Math.max(0, Math.min(canvas.width, car.x));
+  car.y = Math.max(0, Math.min(canvas.height, car.y));
+}
+
+
+// ================= POPUP ========================
+function showPopup(obj){
+  popupActive = true;
+  car.speed = 0;
+
+  const box = document.getElementById("popup");
+  box.innerHTML = `<h2>${obj.text}</h2><br>
+                   <img src="${obj.photo}" style="width:300px; border-radius:10px; margin:15px 0;">
+                   <br><button onclick="closePopup()">Continue</button>`;
+  box.style.display = "block";
+}
+
+function closePopup(){
+  popupActive = false;
+  document.getElementById("popup").style.display = "none";
+}
+
+
+// ================ FINAL SCREEN ==================
+function showFinal(){
+  gameFinished = true;
+  popupActive = true;
+  car.speed = 0;
+
+  const box = document.getElementById("popup");
+  box.innerHTML = `
+    <h1>🏆 Champion of LOVE GP 🏆</h1>
+    <h2>Will you be my Valentine?</h2>
+    <button id="yesBtn">YES</button>
+    <button id="noBtn">NO</button>
+  `;
+  box.style.display = "block";
+
+  const noBtn = document.getElementById("noBtn");
+  const yesBtn = document.getElementById("yesBtn");
+
+  document.addEventListener("mousemove", e=>{
+    const rect = noBtn.getBoundingClientRect();
+    const dist = Math.hypot(e.clientX-(rect.left+rect.width/2),
+                            e.clientY-(rect.top+rect.height/2));
+    if(dist < 120){
+      noBtn.style.position = "absolute";
+      noBtn.style.left = Math.random()*window.innerWidth + "px";
+      noBtn.style.top = Math.random()*window.innerHeight + "px";
+    }
+  });
+
+  yesBtn.onclick = () => startCelebration();
+}
+
+
+// ================= STAR CELEBRATION + CAT =================
+function startCelebration(){
+
+celebrationMusic.play();
+
+  popupActive = false;
+  document.getElementById("popup").style.display = "none";
+
+  // stars
+  for(let i=0;i<200;i++){
+    starParticles.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      vx: (Math.random()-0.5)*6,
+      vy: (Math.random()-3)*6,
+      size: Math.random()*3+2,
+      color: `hsl(${Math.random()*360},100%,70%)`
+    });
+  }
+
+  // add dancing cat
+  const cat = document.createElement("img");
+  cat.src = "photos/cat.gif"; // put your dancing cat gif here
+  cat.classList.add("cat");
+  document.body.appendChild(cat);
+}
+
+function drawStars(){
+  starParticles.forEach((s,i)=>{
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.05; // gravity
+
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.size,0,Math.PI*2);
+    ctx.fill();
+
+    if(s.y>canvas.height || s.x<0 || s.x>canvas.width) starParticles.splice(i,1);
+  });
+}
+
+
+// ================= LAP SYSTEM ===================
+function checkLap(){
+  if(popupActive || gameFinished) return;
+
+  let angle = Math.atan2(car.y-centerY, car.x-centerX);
+
+  if(Math.abs(angle-checkpointAngle) < 0.1){
+    passedCheckpoint = true;
+  }
+
+  if(passedCheckpoint && Math.abs(angle-finishAngle) < 0.1){
+    lap++;
+    passedCheckpoint = false;
+
+    if(lap <= 7){
+      showPopup(stories[lap-1]);
+    }
+
+    if(lap === 7){
+      setTimeout(showFinal, 1000);
+    }
+  }
+}
+
+
+// ================= UPDATE =======================
+function update(){
+
+  if(popupActive || gameFinished) return;
+
+  const accel = 0.12;
+  const brake = 0.18;
+  const drag = 0.992;
+  const maxSpeed = 7;
+
+  if(keys["ArrowUp"]) car.speed += accel;
+  if(keys["ArrowDown"]) car.speed -= brake;
+
+  car.speed *= drag;
+
+  if(car.speed > maxSpeed) car.speed = maxSpeed;
+  if(car.speed < -2) car.speed = -2;
+
+  let grip = 1/(Math.abs(car.speed)*0.25 + 1);
+  let turn = 0.06 * grip;
+
+  if(Math.abs(car.speed) > 0.2){
+    if(keys["ArrowLeft"]) car.angle -= turn;
+    if(keys["ArrowRight"]) car.angle += turn;
+  }
+
+  car.x += Math.cos(car.angle)*car.speed;
+  car.y += Math.sin(car.angle)*car.speed;
+
+  checkTrackLimits();
+  checkLap();
+
+  document.getElementById("speed").innerText =
+    Math.abs(car.speed*40).toFixed(0);
+  document.getElementById("lap").innerText = lap;
+
+  gain.gain.value = Math.min(Math.abs(car.speed)/8,1);
+  osc.frequency.value = 200 + Math.abs(car.speed)*120;
+
+  document.getElementById("fill").style.width =
+    (Math.min(Math.abs(car.speed)/maxSpeed,1)*100)+"%";
+}
+
+
+// ================= LOOP =========================
+function game(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  drawTrack();
+  drawFinishLine(finishAngle);
+  drawFinishLine(checkpointAngle);
+  drawCar();
+
+  drawStars();
+  update();
+  requestAnimationFrame(game);
+}
+
+game();
+</script>
+</body>
+</html>
