@@ -139,28 +139,34 @@ img.cat{
 /* ===== MOBILE CONTROLS ULTRA RESPONSIVE ===== */
 #mobileControls{
   position:fixed;
-  bottom:12px;
+  bottom:3vh;
   left:50%;
   transform:translateX(-50%);
   display:flex;
-  gap:10px;
+  gap:5vw;
   z-index:500;
-
-  width:95vw;              /* never wider than screen */
-  max-width:500px;         /* stop being huge on tablets */
-  justify-content:center;
 }
 
-#mobileControls button{
-  flex:1;                  /* auto fit */
-  max-width:80px;          /* don't grow too big */
-  height:clamp(48px, 12vw, 70px);
-  font-size:clamp(18px, 5vw, 26px);
 
+#mobileControls button{
+  width:18vw;
+  height:18vw;
+  min-width:65px;
+  min-height:65px;
+  max-width:110px;
+  max-height:110px;
+
+  font-size:7vw;
   border:none;
-  border-radius:12px;
-  background:rgba(255,255,255,0.15);
+  border-radius:50%;
+  background:rgba(255,255,255,0.18);
   color:white;
+  backdrop-filter: blur(6px);
+  box-shadow:0 6px 15px rgba(0,0,0,0.4);
+}
+
+#mobileControls button:active{
+  transform:scale(0.9);
 }
 
 .storyImage{
@@ -608,6 +614,7 @@ game();
 </script>
 </body>
 </html>
+
 
 
 
