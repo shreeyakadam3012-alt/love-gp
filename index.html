@@ -123,44 +123,50 @@ img.cat{
   100%{ transform:translateX(-50%) rotate(-10deg);}
 }
 /* ===== MOBILE CONTROLS PRO ===== */
+/* ===== MOBILE CONTROLS ULTRA RESPONSIVE ===== */
 #mobileControls{
   position:fixed;
-  bottom:20px;
+  bottom:4vh;
   left:0;
   width:100%;
   display:flex;
   justify-content:space-between;
-  padding:0 25px;
+  padding:0 6vw;
   box-sizing:border-box;
   z-index:500;
   pointer-events:none;
 }
 
-/* steering group */
+/* groups */
 .controlGroup{
   display:flex;
-  gap:15px;
+  gap:4vw;
   pointer-events:auto;
 }
 
-/* buttons */
+/* BUTTON SIZE BASED ON SCREEN WIDTH */
 #mobileControls button{
-  width:85px;
-  height:85px;
-  font-size:30px;
+  width:18vw;
+  height:18vw;
+  min-width:70px;
+  min-height:70px;
+  max-width:120px;
+  max-height:120px;
+
+  font-size:7vw;
   border:none;
   border-radius:50%;
-  background:rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.18);
   color:white;
-  backdrop-filter: blur(4px);
-  box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+  backdrop-filter: blur(6px);
+  box-shadow:0 6px 15px rgba(0,0,0,0.4);
 }
 
 #mobileControls button:active{
-  transform:scale(0.92);
+  transform:scale(0.9);
   background:rgba(255,255,255,0.35);
 }
-
 
 </style>
 </head>
@@ -598,4 +604,5 @@ game();
 </script>
 </body>
 </html>
+
 
