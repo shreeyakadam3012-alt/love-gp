@@ -122,25 +122,45 @@ img.cat{
   50%{ transform:translateX(-50%) rotate(10deg);}
   100%{ transform:translateX(-50%) rotate(-10deg);}
 }
+/* ===== MOBILE CONTROLS PRO ===== */
 #mobileControls{
   position:fixed;
-  bottom:15px;
-  left:50%;
-  transform:translateX(-50%);
+  bottom:20px;
+  left:0;
+  width:100%;
   display:flex;
-  gap:12px;
+  justify-content:space-between;
+  padding:0 25px;
+  box-sizing:border-box;
   z-index:500;
+  pointer-events:none;
 }
 
+/* steering group */
+.controlGroup{
+  display:flex;
+  gap:15px;
+  pointer-events:auto;
+}
+
+/* buttons */
 #mobileControls button{
-  width:65px;
-  height:65px;
-  font-size:22px;
+  width:85px;
+  height:85px;
+  font-size:30px;
   border:none;
-  border-radius:12px;
+  border-radius:50%;
   background:rgba(255,255,255,0.15);
   color:white;
+  backdrop-filter: blur(4px);
+  box-shadow:0 4px 10px rgba(0,0,0,0.4);
 }
+
+#mobileControls button:active{
+  transform:scale(0.92);
+  background:rgba(255,255,255,0.35);
+}
+
 
 </style>
 </head>
@@ -174,11 +194,19 @@ Lap: <span id="lap">0</span>
 
 <div id="popup"></div>
 <div id="mobileControls">
-  <button id="left">◀</button>
-  <button id="gas">▲</button>
-  <button id="right">▶</button>
-  <button id="brake">▼</button>
+
+  <div class="controlGroup">
+    <button id="left">◀</button>
+    <button id="right">▶</button>
+  </div>
+
+  <div class="controlGroup">
+    <button id="gas">▲</button>
+    <button id="brake">▼</button>
+  </div>
+
 </div>
+
 
 
 <script>
@@ -570,3 +598,4 @@ game();
 </script>
 </body>
 </html>
+
