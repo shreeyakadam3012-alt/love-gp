@@ -107,12 +107,12 @@ body{
   font-size:16px;
 
 }
-  #popup{
-  max-width: 92vw;
+ #popup{
+  max-width: min(92vw, 650px);
   max-height: 85vh;
   overflow-y: auto;
 }
-
+ 
 
 button{
   padding:14px 24px;
@@ -180,14 +180,14 @@ img.cat{
   transform:scale(0.9);
   background:rgba(255,255,255,0.35);
 }
-#storyImage{
-  max-width: 85vw;
-  max-height: 50vh;
-  width: auto;
+.storyImage{
+  width: min(85vw, 520px);
+  max-height: 60vh;
   height: auto;
   border-radius: 12px;
   margin: 15px 0;
 }
+
 
 </style>
 </head>
@@ -625,6 +625,7 @@ game();
 </script>
 </body>
 </html>
+
 
 
 
